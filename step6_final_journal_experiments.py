@@ -262,9 +262,9 @@ def evaluate_on_heldout_test(mask, X_tr, y_tr, X_te, y_te):
     prec = precision_score(y_te, preds, zero_division=0) * 100.0
     rec = recall_score(y_te, preds, zero_division=0) * 100.0
     f1 = f1_score(y_te, preds, zero_division=0) * 100.0
-    pr_auc = average_precision_score(y_te, probs) * 100.0
+    ap = average_precision_score(y_te, probs) * 100.0
     cm = confusion_matrix(y_te, preds)
-    return acc, prec, rec, f1, pr_auc, len(cols), infer_us, cm, clf
+    return acc, prec, rec, f1, ap, len(cols), infer_us, cm, clf
 
 def process_single_seed(seed, X_df, y, is_kdd):
     X_temp, X_te_df, y_temp, y_te = train_test_split(X_df, y, test_size=0.20, stratify=y, random_state=seed)
@@ -368,7 +368,7 @@ def run_benchmark_suite(name, X_df, y, is_kdd=False):
             imb_list.append(imb_r)
 
     print("\n--- SUMMARY RESULTS (Mean ± Std over 10 Monte Carlo Stratified Splits) ---")
-    header = f"{'Method':<22} | {'Acc (%)':<13} | {'Prec (%)':<13} | {'Rec (%)':<13} | {'F1 (%)':<13} | {'PR-AUC':<7} | {'Feats':<11} | {'Opt(s)':<6} | {'Inf(us)':<7}"
+    header = f"{'Method':<22} | {'Acc (%)':<13} | {'Prec (%)':<13} | {'Rec (%)':<13} | {'F1 (%)':<13} | {'AP (%)':<7} | {'Feats':<11} | {'Opt(s)':<6} | {'Inf(us)':<7}"
     print(header)
     print("-" * len(header))
 
@@ -376,18 +376,18 @@ def run_benchmark_suite(name, X_df, y, is_kdd=False):
 
     for m in methods:
         arr = np.array(records[m])
-        # 0:opt_s, 1:dim, 2:acc, 3:prec, 4:rec, 5:f1, 6:pr_auc, 7:feats, 8:inf_us
+        # 0:opt_s, 1:dim, 2:acc, 3:prec, 4:rec, 5:f1, 6:ap, 7:feats, 8:inf_us
         opt_m = arr[:, 0].mean()
         dim_m = arr[:, 1].mean()
         acc_m, acc_s = arr[:, 2].mean(), arr[:, 2].std()
         pre_m, pre_s = arr[:, 3].mean(), arr[:, 3].std()
         rec_m, rec_s = arr[:, 4].mean(), arr[:, 4].std()
         f1_m, f1_s   = arr[:, 5].mean(), arr[:, 5].std()
-        pra_m        = arr[:, 6].mean()
+        ap_m         = arr[:, 6].mean()
         ft_m, ft_s   = arr[:, 7].mean(), arr[:, 7].std()
         inf_m        = arr[:, 8].mean()
 
-        print(f"{m:<22} | {acc_m:5.2f} ± {acc_s:4.2f} | {pre_m:5.2f} ± {pre_s:4.2f} | {rec_m:5.2f} ± {rec_s:4.2f} | {f1_m:5.2f} ± {f1_s:4.2f} | {pra_m:6.2f}% | {ft_m:4.1f} ± {ft_s:3.1f} | {opt_m:6.2f} | {inf_m:7.2f}")
+        print(f"{m:<22} | {acc_m:5.2f} ± {acc_s:4.2f} | {pre_m:5.2f} ± {pre_s:4.2f} | {rec_m:5.2f} ± {rec_s:4.2f} | {f1_m:5.2f} ± {f1_s:4.2f} | {ap_m:6.2f}% | {ft_m:4.1f} ± {ft_s:3.1f} | {opt_m:6.2f} | {inf_m:7.2f}")
 
     print("\n--- WILCOXON SIGNED-RANK TEST (Elitist Q-BGWO + SVM vs Baselines) ---")
     for m in methods[:-1]:
@@ -408,7 +408,7 @@ def run_benchmark_suite(name, X_df, y, is_kdd=False):
     if len(imb_list) > 0:
         imb_arr = np.array(imb_list)
         print("\n--- IMBALANCED REALISTIC TRAFFIC EVALUATION (10% Attack / 90% Benign on CICIDS2017) ---")
-        print(f"Acc: {imb_arr[:,0].mean():.2f}±{imb_arr[:,0].std():.2f}% | Prec: {imb_arr[:,1].mean():.2f}±{imb_arr[:,1].std():.2f}% | Rec: {imb_arr[:,2].mean():.2f}±{imb_arr[:,2].std():.2f}% | F1: {imb_arr[:,3].mean():.2f}±{imb_arr[:,3].std():.2f}% | PR-AUC: {imb_arr[:,4].mean():.2f}%")
+        print(f"Acc: {imb_arr[:,0].mean():.2f}±{imb_arr[:,0].std():.2f}% | Prec: {imb_arr[:,1].mean():.2f}±{imb_arr[:,1].std():.2f}% | Rec: {imb_arr[:,2].mean():.2f}±{imb_arr[:,2].std():.2f}% | F1: {imb_arr[:,3].mean():.2f}±{imb_arr[:,3].std():.2f}% | AP: {imb_arr[:,4].mean():.2f}%")
 
 if __name__ == "__main__":
     print(f"Environment: Python {platform.python_version()} | scikit-learn {sklearn.__version__} | OS: {platform.system()} {platform.release()} | CPU: {platform.processor()}")
